@@ -6,7 +6,7 @@ from pytube import YouTube
 from moviepy.editor import VideoFileClip
 import os
 
-# Function to scrape songs from a playlist URL using BeautifulSoup
+
 def scrape_playlist(url):
     try:
         response = requests.get(url, verify=True)
@@ -23,7 +23,7 @@ def scrape_playlist(url):
             songs.append(song_name)
     return songs
 
-# Function to search for a song on YouTube using its title and return the video ID
+
 def search_youtube(query, api_key):
     try:
         search_url = f"https://www.googleapis.com/youtube/v3/search?key={api_key}&q={query}&part=snippet&type=video"
@@ -41,7 +41,7 @@ def search_youtube(query, api_key):
         print(f"No results found for '{query}' on YouTube")
         return None
 
-# Function to download audio from a YouTube video using its video ID
+
 def download_audio(video_id, output_file):
     try:
         yt = YouTube(f"https://www.youtube.com/watch?v={video_id}")
@@ -53,7 +53,7 @@ def download_audio(video_id, output_file):
     except Exception as e:
         print(f"Error downloading audio for video ID {video_id}: {e}")
 
-# Function to separate audio from an MP4 file and delete the MP4
+
 def separate_audio(mp4_file, mp3_file):
     try:
         video = VideoFileClip(mp4_file)
@@ -63,7 +63,7 @@ def separate_audio(mp4_file, mp3_file):
     except Exception as e:
         print(f"Error separating audio from {mp4_file}: {e}")
 
-# Main function
+
 def main():
     playlist_url = "YOUR_PLAYLIST_URL_HERE"
     api_key = "YOUR_YOUTUBE_API_KEY_HERE"
