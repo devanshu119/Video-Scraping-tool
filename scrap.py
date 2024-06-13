@@ -1,11 +1,19 @@
+
 import requests
 from bs4 import BeautifulSoup
 from pytube import YouTube
 from moviepy.editor import VideoFileClip
+import os
 
 # Function to scrape songs from a playlist URL using BeautifulSoup
 def scrape_playlist(url):
-    response = requests.get(url)
+    try:
+        response = requests.get(url, verify=True)
+        response.raise_for_status()  # Raise an exception for bad status codes
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching playlist URL: {e}")
+        return []
+
     soup = BeautifulSoup(response.text, 'html.parser')
     songs = []
     for item in soup.find_all('a', {'dir': 'auto'}):
@@ -15,46 +23,63 @@ def scrape_playlist(url):
     return songs
 
 # Function to search for a song on YouTube using its title and return the video ID
-def search_youtube(query):
-    # Use YouTube Data API to search for the query
-    # Insert your YouTube Data API key below
-    api_key = "YOUR_YOUTUBE_API_KEY"
-    search_url = f"https://www.googleapis.com/youtube/v3/search?key={api_key}&q={query}&part=snippet&type=video"
-    response = requests.get(search_url)
+def search_youtube(query, api_key):
+    try:
+        search_url = f"https://www.googleapis.com/youtube/v3/search?key={api_key}&q={query}&part=snippet&type=video"
+        response = requests.get(search_url, verify=True)
+        response.raise_for_status()  # Raise an exception for bad status codes
+    except requests.exceptions.RequestException as e:
+        print(f"Error searching for '{query}' on YouTube: {e}")
+        return None
+
     json_data = response.json()
-    video_id = json_data['items'][0]['id']['videoId']
-    return video_id
+    if 'items' in json_data and len(json_data['items']) > 0:
+        video_id = json_data['items'][0]['id']['videoId']
+        return video_id
+    else:
+        print(f"No results found for '{query}' on YouTube")
+        return None
 
 # Function to download audio from a YouTube video using its video ID
-def download_audio(video_id):
-    yt = YouTube(f"https://www.youtube.com/watch?v={video_id}")
-    audio_stream = yt.streams.filter(only_audio=True).first()
-    audio_stream.download(filename='temp')
+def download_audio(video_id, output_file):
+    try:
+        yt = YouTube(f"https://www.youtube.com/watch?v={video_id}")
+        audio_stream = yt.streams.filter(only_audio=True).first()
+        if audio_stream:
+            audio_stream.download(output_file=output_file)
+        else:
+            print(f"No audio stream found for video ID {video_id}")
+    except Exception as e:
+        print(f"Error downloading audio for video ID {video_id}: {e}")
 
 # Function to separate audio from an MP4 file and delete the MP4
-def separate_audio(mp4_file):
-    video = VideoFileClip(mp4_file)
-    audio_file = mp4_file.replace('.mp4', '.mp3')
-    video.audio.write_audiofile(audio_file)
-    video.close()  # Close the video file
-    # Delete the MP4 file
-    import os
-    os.remove(mp4_file)
+def separate_audio(mp4_file, mp3_file):
+    try:
+        video = VideoFileClip(mp4_file)
+        video.audio.write_audiofile(mp3_file)
+        video.close()  # Close the video file
+        os.remove(mp4_file)  # Delete the MP4 file
+    except Exception as e:
+        print(f"Error separating audio from {mp4_file}: {e}")
 
 # Main function
 def main():
     playlist_url = "YOUR_PLAYLIST_URL_HERE"
+    api_key = "YOUR_YOUTUBE_API_KEY_HERE"
+
     songs = scrape_playlist(playlist_url)
 
     for song in songs:
         print(f"Searching for '{song}' on YouTube...")
-        video_id = search_youtube(song)
-        print(f"Downloading audio for '{song}'...")
-        download_audio(video_id)
-        mp4_file = 'temp.mp4'
-        print(f"Separating audio from '{song}'...")
-        separate_audio(mp4_file)
-        print(f"Audio for '{song}' has been downloaded and separated successfully!")
+        video_id = search_youtube(song, api_key)
+        if video_id:
+            print(f"Downloading audio for '{song}'...")
+            mp4_file = f"temp_{song}.mp4"
+            download_audio(video_id, mp4_file)
+            mp3_file = f"{song}.mp3"
+            print(f"Separating audio from '{song}'...")
+            separate_audio(mp4_file, mp3_file)
+            print(f"Audio for '{song}' has been downloaded and separated successfully!")
 
 if __name__ == "__main__":
     main()
