@@ -1,0 +1,6 @@
+# Requirements for PyTubeFix implementation
+requests>=2.25.0
+beautifulsoup4>=4.9.0
+pytubefix>=6.0.0
+moviepy>=1.0.3
+google-api-python-client>=2.0.0
